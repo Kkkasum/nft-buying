@@ -354,7 +354,11 @@ describe('NftCollection', () => {
         });
 
         const content = await nftCollection.getContent();
-        const { collectionMeta, nftCommonMeta } = cellToContent(content.collectionMeta, content.nftCommonMeta);
+        const { typeCollectionMeta, collectionMeta, typeNftCommonMeta, nftCommonMeta } = cellToContent(
+            content.collectionMeta,
+            content.nftCommonMeta,
+        );
+        console.log(typeCollectionMeta, collectionMeta, typeNftCommonMeta, nftCommonMeta);
         expect(collectionMeta).toEqual(newCollectionMeta);
         expect(nftCommonMeta).toEqual(newNftCommonMeta);
     });

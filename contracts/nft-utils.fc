@@ -1,4 +1,4 @@
-cell calculate_nft_item_state_init(int item_index, slice collection_address, cell content, cell nft_item_code) {
+cell calculate_nft_item_state_init(int item_index, slice collection_address, cell nft_item_code) {
     cell data = begin_cell()
         .store_uint(item_index, 64)
         .store_slice(collection_address)

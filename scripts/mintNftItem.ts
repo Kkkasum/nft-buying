@@ -3,9 +3,9 @@ import { Address, beginCell, toNano } from '@ton/core';
 import { contentToCell, NftCollection, royaltyParamsToCell } from '../wrappers/NftCollection';
 
 export async function run(provider: NetworkProvider) {
-    const ownerAddress = Address.parse('');
-    const royaltyAddress = Address.parse('');
-    const feeAddress = Address.parse('');
+    const ownerAddress = Address.parse('0QB_MpZaOhVMdN4Q6NsRCGYpHsOYqxiEuqIGsyUhweQnaQ4g'); // адрес владельца коллекции
+    const royaltyAddress = Address.parse('kf8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM_BP'); // адрес кошелька, на который будут приходить комиссии с продажи на маркетплейсах
+    const feeAddress = Address.parse('0QB_MpZaOhVMdN4Q6NsRCGYpHsOYqxiEuqIGsyUhweQnaQ4g'); // адрес кошелька, на который будут приходить комиссии с первоначальной продажи (1 ТОН)
 
     const contentCell = contentToCell(
         'https://starsfinance.fra1.digitaloceanspaces.com/nft/collection.json',
@@ -13,7 +13,7 @@ export async function run(provider: NetworkProvider) {
     );
     const royaltyParamsCell = royaltyParamsToCell(10, 100, royaltyAddress);
 
-    const nftMinter = provider.open(
+    const nftCollection = provider.open(
         NftCollection.createFromConfig(
             {
                 ownerAddress: ownerAddress,
@@ -28,12 +28,16 @@ export async function run(provider: NetworkProvider) {
         ),
     );
 
-    const { nextItemIndex } = await nftMinter.getCollectionData();
+    const { nextItemIndex } = await nftCollection.getCollectionData();
 
-    await nftMinter.sendMint(provider.sender(), {
-        value: toNano('0.1'),
+    await nftCollection.sendMint(provider.sender(), {
+        value: toNano('0.05'),
         itemIndex: nextItemIndex,
         amount: toNano('0.05'),
-        nftContent: beginCell().storeBuffer(Buffer.from('common.json')).endCell(),
+        nftContent: beginCell()
+            .storeAddress(ownerAddress)
+            .storeRef(beginCell().storeBuffer(Buffer.from('rare.json')).endCell())
+            .storeAddress(ownerAddress)
+            .endCell(),
     });
 }

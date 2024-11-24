@@ -26,9 +26,56 @@ export type NftCollectionConfig = {
     immortal?: bigint;
 };
 
+function bufferToChunks(buff: Buffer, chunkSize: number): Buffer[] {
+    const chunks: Buffer[] = [];
+    while (buff.byteLength > 0) {
+        chunks.push(buff.subarray(0, chunkSize));
+        buff = buff.subarray(chunkSize);
+    }
+
+    return chunks;
+}
+
+function makeSnakeCell(data: Buffer): Cell {
+    const chunks = bufferToChunks(data, 127);
+
+    if (chunks.length === 0) {
+        return beginCell().endCell();
+    }
+
+    if (chunks.length === 1) {
+        // @ts-ignore
+        return beginCell().storeBuffer(chunks[0]).endCell();
+    }
+
+    let curCell = beginCell();
+
+    for (let i = chunks.length - 1; i >= 0; i--) {
+        const chunk = chunks[i];
+        // @ts-ignore
+        curCell.storeBuffer(chunk);
+
+        if (i - 1 >= 0) {
+            const nextCell = beginCell();
+            nextCell.storeRef(curCell);
+            curCell = nextCell;
+        }
+    }
+
+    return curCell.endCell();
+}
+
+export function encodeOffChainContent(content: string): Cell {
+    let data = Buffer.from(content);
+    const offChainPrefix = Buffer.from([0x01]);
+    data = Buffer.concat([offChainPrefix, data]);
+
+    return makeSnakeCell(data);
+}
+
 export function contentToCell(collectionMeta: string, nftCommonMeta: string): Cell {
-    const collectionMetaCell = beginCell().storeUint(1, 8).storeBuffer(Buffer.from(collectionMeta)).endCell();
-    const nftCommonMetaCell = beginCell().storeUint(1, 8).storeBuffer(Buffer.from(nftCommonMeta)).endCell();
+    const collectionMetaCell = encodeOffChainContent(collectionMeta);
+    const nftCommonMetaCell = beginCell().storeBuffer(Buffer.from(nftCommonMeta)).endCell();
 
     return beginCell().storeRef(collectionMetaCell).storeRef(nftCommonMetaCell).endCell();
 }
@@ -36,18 +83,22 @@ export function contentToCell(collectionMeta: string, nftCommonMeta: string): Ce
 export function cellToContent(
     collectionMetaCell: Cell,
     nftCommonMetaCell: Cell,
-): { collectionMeta: string; nftCommonMeta: string } {
+): { typeCollectionMeta: number; collectionMeta: string; typeNftCommonMeta: number; nftCommonMeta: string } {
     const collectionMetaSlice = collectionMetaCell.beginParse();
     const nftCommonMetaSlice = nftCommonMetaCell.beginParse();
 
-    collectionMetaSlice.skip(8);
-    nftCommonMetaSlice.skip(8);
+    // collectionMetaSlice.skip(8);
+    // nftCommonMetaSlice.skip(8);
 
+    const typeCollectionMeta = collectionMetaSlice.loadUint(8);
     const collectionMeta = collectionMetaSlice.loadStringTail();
+    const typeNftCommonMeta = nftCommonMetaSlice.loadUint(8);
     const nftCommonMeta = nftCommonMetaSlice.loadStringTail();
 
     return {
+        typeCollectionMeta,
         collectionMeta,
+        typeNftCommonMeta,
         nftCommonMeta,
     };
 }
