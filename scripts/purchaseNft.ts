@@ -4,9 +4,10 @@ import { contentToCell, NftCollection, royaltyParamsToCell } from '../wrappers/N
 import { NftItem } from '../wrappers/NftItem';
 
 export async function run(provider: NetworkProvider) {
-    const ownerAddress = Address.parse('0QB_MpZaOhVMdN4Q6NsRCGYpHsOYqxiEuqIGsyUhweQnaQ4g');
-    const royaltyAddress = Address.parse('kf8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM_BP');
-    const feeAddress = Address.parse('0QB_MpZaOhVMdN4Q6NsRCGYpHsOYqxiEuqIGsyUhweQnaQ4g');
+    const ownerAddress = Address.parse('');
+    const royaltyAddress = Address.parse('');
+    const feeAddress = Address.parse('');
+    const rarity = 0;
 
     const contentCell = contentToCell(
         'https://starsfinance.fra1.digitaloceanspaces.com/nft/collection.json',
@@ -35,7 +36,7 @@ export async function run(provider: NetworkProvider) {
     await nftCollection.sendPurchase(provider.sender(), {
         value: purchaseFee,
         itemIndex: nextItemIndex,
-        rarity: 0,
+        rarity: rarity,
         amount: toNano('0.05'),
         ownerAddress: ownerAddress,
     });
