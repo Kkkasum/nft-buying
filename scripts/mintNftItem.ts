@@ -8,8 +8,8 @@ export async function run(provider: NetworkProvider) {
     const feeAddress = Address.parse(''); // адрес кошелька, на который будут приходить комиссии с первоначальной продажи (1 ТОН)
 
     const contentCell = contentToCell(
-        'https://starsfinance.fra1.digitaloceanspaces.com/nft/collection.json',
-        'https://starsfinance.fra1.digitaloceanspaces.com/nft/items/',
+        'https://starsfinance.fra1.digitaloceanspaces.com/starsfinft/collection.json',
+        'https://starsfinance.fra1.digitaloceanspaces.com/starsfinft/items/',
     );
     const royaltyParamsCell = royaltyParamsToCell(10, 100, royaltyAddress);
 
@@ -29,6 +29,13 @@ export async function run(provider: NetworkProvider) {
     );
 
     const { nextItemIndex } = await nftCollection.getCollectionData();
+    const rarity = '.json';
+    // common.json
+    // uncommon.json
+    // rare.json
+    // mythical.json
+    // legendary.json
+    // immortal.json
 
     await nftCollection.sendMint(provider.sender(), {
         value: toNano('0.05'),
@@ -36,7 +43,7 @@ export async function run(provider: NetworkProvider) {
         amount: toNano('0.05'),
         nftContent: beginCell()
             .storeAddress(ownerAddress)
-            .storeRef(beginCell().storeBuffer(Buffer.from('rare.json')).endCell())
+            .storeRef(beginCell().storeBuffer(Buffer.from(rarity)).endCell())
             .storeAddress(ownerAddress)
             .endCell(),
     });

@@ -1,5 +1,5 @@
 import { compile, NetworkProvider } from '@ton/blueprint';
-import { Address, toNano } from '@ton/core';
+import { Address, beginCell, toNano } from '@ton/core';
 import { contentToCell, NftCollection, royaltyParamsToCell } from '../wrappers/NftCollection';
 
 export async function run(provider: NetworkProvider) {
@@ -28,9 +28,25 @@ export async function run(provider: NetworkProvider) {
         ),
     );
 
-    await nftCollection.sendDeploy(provider.sender(), toNano('0.05'));
+    const { nextItemIndex } = await nftCollection.getCollectionData();
+    const userAddress = Address.parse(''); // адрес пользователя
+    const rarity = '.json'; // вводите файл, соответствующий рарности
+    // Возможные варианты:
+    // common.json
+    // uncommon.json
+    // rare.json
+    // mythical.json
+    // legendary.json
+    // immortal.json
 
-    await provider.waitForDeploy(nftCollection.address);
-
-    // run methods on `nftMinter`
+    await nftCollection.sendMint(provider.sender(), {
+        value: toNano('0.05'),
+        itemIndex: nextItemIndex,
+        amount: toNano('0.05'),
+        nftContent: beginCell()
+            .storeAddress(userAddress)
+            .storeRef(beginCell().storeBuffer(Buffer.from(rarity)).endCell())
+            .storeAddress(ownerAddress)
+            .endCell(),
+    });
 }

@@ -201,6 +201,73 @@ int storage_fees() asm "STORAGEFEES";
         return ();
     }
 
+    throw_unless(error::unauthorized_owner_request, equal_slices_bits(sender_address, storage::owner_address));
+
+    if (op == op::mint) { ;; deploy new nft
+        int item_index = in_msg_body~load_uint(64);
+        
+        throw_unless(error::invalid_item_index, item_index <= storage::next_item_index);
+
+        var is_last = item_index == storage::next_item_index;
+        deploy_nft_item(item_index, storage::owner_address, storage::nft_item_code, in_msg_body~load_coins(), in_msg_body~load_ref());
+        if (is_last) {
+            storage::next_item_index += 1;
+            save_data();
+        }
+        return ();
+    }
+
+    if (op == op::batch_mint) { ;; batch deploy of new nfts
+        int counter = 0;
+        cell deploy_list = in_msg_body~load_ref();
+        do {
+            var (item_index, item, f?) = deploy_list~udict::delete_get_min(64);
+            if (f?) {
+                counter += 1;
+                if (counter >= 250) { ;; Limit due to limits of action list size
+                    throw(error::batch_mint_limit);
+                }
+
+                throw_unless(error::invalid_item_index, item_index <= storage::next_item_index);
+
+                deploy_nft_item(item_index, storage::owner_address, storage::nft_item_code, in_msg_body~load_coins(), in_msg_body~load_ref());
+                if (item_index == storage::next_item_index) {
+                    storage::next_item_index += 1;
+                }
+            }
+        } until ( ~ f?);
+        save_data();
+        return ();
+    }
+
+    if (op == op::change_owner) { ;; change owner
+        storage::owner_address = in_msg_body~load_msg_addr();
+        save_data();
+        return ();
+    }
+
+    if (op == op::change_content) { ;; change content
+        storage::content = in_msg_body~load_ref();
+        storage::royalty_params = in_msg_body~load_ref();
+        save_data();
+        return ();
+    }
+
+    if (op == op::change_fee) {
+        storage::purchase_fee = in_msg_body~load_coins();
+        storage::fee_address = in_msg_body~load_msg_addr();
+        save_data();
+        return ();
+    }
+
+    if (op == op::upgrade) {
+        cell new_data = in_msg_body~load_ref();
+        cell new_code = in_msg_body~load_ref();
+        set_data(new_data);
+        set_code(new_code);
+        return ();
+    }
+
     throw(0xffff);
 }
 
